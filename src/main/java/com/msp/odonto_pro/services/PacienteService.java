@@ -2,10 +2,13 @@ package com.msp.odonto_pro.services;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.msp.odonto_pro.dtos.PacienteDTO;
 import com.msp.odonto_pro.entity.Paciente;
 import com.msp.odonto_pro.exceptions.NotFoundException;
+import com.msp.odonto_pro.projections.pacientes.PacienteProjection;
 import com.msp.odonto_pro.repositorys.PacienteRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -30,4 +33,10 @@ public class PacienteService {
 		
 		this.pacienteRepository.deleteById(id);
 	}
+	
+	//Listar pacientes
+	public Page<PacienteProjection> listarPacientesPaginado(Pageable pageable) {
+	    return pacienteRepository.listarPacientes(pageable);
+	}
+	
 }

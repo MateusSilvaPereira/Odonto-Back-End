@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.msp.odonto_pro.dtos.PacienteDTO;
@@ -45,8 +46,9 @@ public class PacienteController {
 	//Listar pacientes
 	@Operation(summary = "Listar pacientes paginado")
 	@GetMapping("/listar")
-	public ResponseEntity<Page<PacienteProjection>> listar(Pageable pageable) {
-	    return ResponseEntity.ok(pacienteService.listarPacientesPaginado(pageable));
+	public ResponseEntity<Page<PacienteProjection>> listar(@RequestParam(value = "p", required = false, defaultValue = "1") Integer pagina, 
+			@RequestParam(value = "q", required = false, defaultValue = "50") Integer quantidade) {
+	    return ResponseEntity.ok(pacienteService.listarPacientesPaginado(pagina, quantidade));
 	}
 
 }

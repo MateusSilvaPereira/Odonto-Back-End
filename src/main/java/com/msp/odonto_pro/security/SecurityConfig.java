@@ -12,29 +12,51 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
-	private final JwtAuthFilter jwtAuthFilter;
+    private final JwtAuthFilter jwtAuthFilter;
 
-	public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
-		this.jwtAuthFilter = jwtAuthFilter;
-	}
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
-	@Bean
-	PasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
-	}
+    @Bean
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
-	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		http.csrf(csrf -> csrf.disable())
-				.headers(headers -> headers.frameOptions(frame -> frame.disable()).xssProtection(xss -> xss.disable())
-						.contentTypeOptions(configurer -> configurer.disable()))
-				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs",
-								"/v3/api-docs/swagger-config", "/swagger-resources/**", "/webjars/**", "/auth/**")
-						.permitAll().anyRequest().authenticated())
-				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    @Bean
+    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
 
-		return http.build();
-	}
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.disable())
+                .xssProtection(xss -> xss.disable())
+                .contentTypeOptions(configurer -> configurer.disable())
+            )
+
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/v3/api-docs/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs/swagger-config",
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/auth/**",
+                    "/paciente/listar" 
+                )
+                .permitAll()
+                .anyRequest()
+                .authenticated()
+            )
+
+            .sessionManagement(sess -> sess
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
 }

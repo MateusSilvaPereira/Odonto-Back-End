@@ -40,6 +40,8 @@ public class Paciente {
 
 	private LocalDate dataNascimento;
 	
+	private String endereco;
+	
 	@JsonIgnore
 	@OneToMany(mappedBy = "paciente", fetch = FetchType.LAZY)
 	private List<Consulta> consultas;

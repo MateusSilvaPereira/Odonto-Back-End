@@ -27,6 +27,8 @@ public class PacienteDTO {
 	private String email;
 
 	private LocalDate dataNascimento;
+	
+	private String endereco;
 
 	private List<Consulta> consultas;
 }

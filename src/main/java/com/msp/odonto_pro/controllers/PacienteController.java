@@ -1,9 +1,7 @@
 package com.msp.odonto_pro.controllers;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,7 +19,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@CrossOrigin
 @RequestMapping(value = "/paciente")
 @RequiredArgsConstructor
 public class PacienteController {
@@ -42,13 +39,14 @@ public class PacienteController {
 		this.pacienteService.excluir(id);
 		return ResponseEntity.ok().build();
 	}
-	
-	//Listar pacientes
+
+	// Listar pacientes
 	@Operation(summary = "Listar pacientes paginado")
 	@GetMapping("/listar")
-	public ResponseEntity<Page<PacienteProjection>> listar(@RequestParam(value = "p", required = false, defaultValue = "1") Integer pagina, 
+	public ResponseEntity<Page<PacienteProjection>> listar(
+			@RequestParam(value = "p", required = false, defaultValue = "1") Integer pagina,
 			@RequestParam(value = "q", required = false, defaultValue = "50") Integer quantidade) {
-	    return ResponseEntity.ok(pacienteService.listarPacientesPaginado(pagina, quantidade));
+		return ResponseEntity.ok(pacienteService.listarPacientesPaginado(pagina, quantidade));
 	}
 
 }

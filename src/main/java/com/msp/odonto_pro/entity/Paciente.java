@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Table(name = Const.TB_PACIENTE)
 public class Paciente {
-	
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -39,7 +39,9 @@ public class Paciente {
 	private String email;
 
 	private LocalDate dataNascimento;
-	
+
+	private String endereco;
+
 	@JsonIgnore
 	@OneToMany(mappedBy = "paciente", fetch = FetchType.LAZY)
 	private List<Consulta> consultas;

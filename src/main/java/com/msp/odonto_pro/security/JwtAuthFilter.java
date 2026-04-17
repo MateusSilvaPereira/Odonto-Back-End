@@ -9,53 +9,57 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
 import java.io.IOException;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+	private final JwtService jwtService;
 
-    public JwtAuthFilter(JwtService jwtService) {
-        this.jwtService = jwtService;
-    }
+	public JwtAuthFilter(JwtService jwtService) {
+		this.jwtService = jwtService;
+	}
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getRequestURI();
-        return path.startsWith("/swagger-ui")
-                || path.startsWith("/v3/api-docs")
-                || path.startsWith("/webjars/")
-                || path.startsWith("/swagger-resources")
-                || path.equals("/swagger-ui.html")
-                || path.startsWith("/auth")
-        		|| path.startsWith("/paciente/listar");
-    }
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) {
+		String path = request.getRequestURI();
+		String method = request.getMethod();
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+		if ("OPTIONS".equalsIgnoreCase(method)) {
+			return true;
+		}
+		return path.startsWith("/auth");
+	}
 
-        final String authHeader = request.getHeader("Authorization");
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException, IOException {
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+		final String authHeader = request.getHeader("Authorization");
 
-        String token = authHeader.substring(7);
-        String username = jwtService.extractUsername(token);
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			filterChain.doFilter(request, response);
+			return;
+		}
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (jwtService.isTokenValid(token, username)) {
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(username, null, null);
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-            }
-        }
-        filterChain.doFilter(request, response);
-    }
+		try {
+			String token = authHeader.substring(7);
+			String username = jwtService.extractUsername(token);
+
+			if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+				if (jwtService.isTokenValid(token, username)) {
+					UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username,
+							null, null);
+
+					authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+					SecurityContextHolder.getContext().setAuthentication(authToken);
+				}
+			}
+		} catch (Exception e) {
+		}
+
+		filterChain.doFilter(request, response);
+	}
 }

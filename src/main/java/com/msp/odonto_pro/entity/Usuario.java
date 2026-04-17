@@ -1,6 +1,11 @@
 package com.msp.odonto_pro.entity;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,10 +15,19 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "usuarios")
-public class Usuario {
+public class Usuario implements UserDetails { 
+	
+	private static final long serialVersionUID = 1L;
+
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,6 +44,12 @@ public class Usuario {
 
 	@Column(nullable = false)
 	private String nome;
+
+	@Column(length = 20)
+	private String telefone;
+
+	@Column
+	private String avatar;
 
 	@Column(nullable = false)
 	private String role;
@@ -52,63 +72,36 @@ public class Usuario {
 		this.atualizadoEm = LocalDateTime.now();
 	}
 
-	public Long getId() {
-		return id;
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return Collections.emptyList(); 
 	}
 
-	public String getUsername() {
-		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
+	@Override
 	public String getPassword() {
-		return password;
+		return this.password;
 	}
 
-	public void setPassword(String password) {
-		this.password = password;
+	@Override
+	public String getUsername() {
+		return this.username;
 	}
 
-	public String getNome() {
-		return nome;
+	@Override
+	public boolean isAccountNonExpired() { return true; }
+
+	@Override
+	public boolean isAccountNonLocked() { return true; }
+
+	@Override
+	public boolean isCredentialsNonExpired() { return true; }
+
+	@Override
+	public boolean isEnabled() {
+		return this.ativo; 
 	}
 
-	public void setNome(String nome) {
-		this.nome = nome;
-	}
 
-	public String getRole() {
-		return role;
-	}
-
-	public void setRole(String role) {
-		this.role = role;
-	}
-
-	public boolean isAtivo() {
-		return ativo;
-	}
-
-	public void setAtivo(boolean ativo) {
-		this.ativo = ativo;
-	}
-
-	public LocalDateTime getCriadoEm() {
-		return criadoEm;
-	}
-
-	public LocalDateTime getAtualizadoEm() {
-		return atualizadoEm;
-	}
+	public LocalDateTime getCriadoEm() { return criadoEm; }
+	public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
 }

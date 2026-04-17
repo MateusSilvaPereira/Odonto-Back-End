@@ -28,5 +28,7 @@ public class PacienteDTO {
 
 	private LocalDate dataNascimento;
 
+	private String endereco;
+
 	private List<Consulta> consultas;
 }

@@ -1,6 +1,7 @@
 package com.msp.odonto_pro.entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.msp.odonto_pro.util.Const;
@@ -31,9 +32,9 @@ public class Consulta {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private LocalDate data;
-
-	private LocalTime hora;
+	private LocalDateTime dataAgendamento;
+	
+	private LocalDateTime dataConsulta;
 
 	private String observacao;
 

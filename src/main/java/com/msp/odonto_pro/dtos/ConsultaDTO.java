@@ -19,9 +19,9 @@ public class ConsultaDTO {
 	
 	private Long id;
 
-	private LocalDate data;
+	private LocalDate dataAgendamento;
 
-	private LocalTime hora;
+	private LocalTime dataConsulta;
 
 	private String observacao;
 

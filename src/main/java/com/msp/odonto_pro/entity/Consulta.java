@@ -32,20 +32,36 @@ public class Consulta {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	private LocalDateTime dataAgendamento;
-	
-	private LocalDateTime dataConsulta;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "paciente_id", nullable = false)
+	private Paciente paciente;
 
-	private String observacao;
+	@Column(nullable = false)
+	private LocalDate data;
+
+	@Column(name = "hora", nullable = false)
+	private LocalTime horario;
+
+	private String procedimento;
+
+	/**
+	 * Nome do dentista em texto livre. Ainda não há cadastro próprio de
+	 * dentistas vinculado à consulta.
+	 */
+	private String dentista;
 
 	@Column(nullable = false)
 	private String status;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "dentista_id", nullable = false)
-	private Dentista dentista;
+	/**
+	 * Timestamp de quando o lembrete de 1 dia antes foi enviado. Null =
+	 * ainda não enviado. Usado para garantir idempotência por consulta.
+	 */
+	private LocalDateTime lembrete1DiaEnviadoEm;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "paciente_id", nullable = false)
-	private Paciente paciente;
+	/**
+	 * Timestamp de quando o lembrete de 1 hora antes foi enviado. Null =
+	 * ainda não enviado.
+	 */
+	private LocalDateTime lembrete1HoraEnviadoEm;
 }

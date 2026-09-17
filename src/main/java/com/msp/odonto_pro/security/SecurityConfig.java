@@ -110,6 +110,16 @@ public class SecurityConfig {
 						// --- USUÁRIOS (só ADMIN) ---
 						.requestMatchers("/usuario/**").hasRole("ADMIN")
 
+						// --- NOTIFICAÇÕES / CONFIG DE LEMBRETES (só ADMIN) ---
+						.requestMatchers("/notificacoes/**").hasRole("ADMIN")
+
+						// --- FINANCEIRO (só ADMIN) ---
+						.requestMatchers("/financeiro/**").hasRole("ADMIN")
+						.requestMatchers("/pagamentos/**").hasRole("ADMIN")
+
+						// --- RELATÓRIO GERAL CONSOLIDADO (só ADMIN) ---
+						.requestMatchers("/relatorios/**").hasRole("ADMIN")
+
 						// --- DENTISTAS (ADMIN ou DENTISTA) ---
 						.requestMatchers(HttpMethod.DELETE, "/dentista/**").hasRole("ADMIN")
 						.requestMatchers("/dentista/**").hasAnyRole("ADMIN", "DENTISTA")
@@ -121,6 +131,11 @@ public class SecurityConfig {
 						// --- PACIENTES (todos os roles autenticados) ---
 						.requestMatchers(HttpMethod.DELETE, "/paciente/**").hasRole("ADMIN")
 						.requestMatchers("/paciente/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
+
+						// --- ODONTOGRAMA E PLANO DE TRATAMENTO (sub-recursos de paciente) ---
+						.requestMatchers("/pacientes/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
+						.requestMatchers(HttpMethod.DELETE, "/tratamentos/**").hasRole("ADMIN")
+						.requestMatchers("/tratamentos/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
 
 						// --- CONSULTAS (ADMIN, DENTISTA ou RECEPCIONISTA) ---
 						.requestMatchers(HttpMethod.DELETE, "/consultas/**").hasRole("ADMIN")

@@ -1,10 +1,10 @@
 package com.msp.odonto_pro.dtos;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import com.msp.odonto_pro.entity.Dentista;
-import com.msp.odonto_pro.entity.Paciente;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,18 +16,26 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class ConsultaDTO {
-	
+
 	private Long id;
 
-	private LocalDate dataAgendamento;
+	private Long pacienteId;
 
-	private LocalTime dataConsulta;
+	private String nomePaciente;
 
-	private String observacao;
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+	private LocalDate data;
+
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
+	private LocalTime horario;
+
+	private String procedimento;
+
+	private String dentista;
 
 	private String status;
 
-	private Dentista dentista;
+	private LocalDateTime lembrete1DiaEnviadoEm;
 
-	private Paciente paciente;
+	private LocalDateTime lembrete1HoraEnviadoEm;
 }

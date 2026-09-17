@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -14,19 +13,13 @@ import org.springframework.stereotype.Service;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
-import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.Phrase;
-import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfWriter;
 import com.msp.odonto_pro.dtos.PacienteDTO;
 import com.msp.odonto_pro.entity.Paciente;
 import com.msp.odonto_pro.exceptions.NotFoundException;
 import com.msp.odonto_pro.projections.pacientes.PacienteProjection;
 import com.msp.odonto_pro.repositorys.PacienteRepository;
+import com.msp.odonto_pro.util.PdfReportUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -71,31 +64,20 @@ public class PacienteService {
 		final List<Paciente> pacientes = this.pacienteRepository.findAll(Sort.by("nome").ascending());
 
 		try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-			final Document document = new Document(PageSize.A4, 36, 36, 54, 36);
-			PdfWriter.getInstance(document, out);
-			document.open();
+			final Document document = PdfReportUtil.novoDocumento(out);
+			document.add(PdfReportUtil.titulo("Relatório de Pacientes"));
+			document.add(new com.lowagie.text.Paragraph(" "));
 
-			final Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-			document.add(new Paragraph("Relatório de Pacientes", titleFont));
-			document.add(new Paragraph(" "));
+			final PdfPTable table = PdfReportUtil.novaTabela(new float[] { 3f, 2f, 2f, 2f, 3f }, "Nome", "CPF",
+					"Telefone", "Nascimento", "Email");
 
-			final PdfPTable table = new PdfPTable(5);
-			table.setWidthPercentage(100);
-			table.setWidths(new float[] { 3f, 2f, 2f, 2f, 3f });
-
-			final Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
-			Stream.of("Nome", "CPF", "Telefone", "Nascimento", "Email")
-					.forEach(text -> table.addCell(new PdfPCell(new Phrase(text, headerFont))));
-
-			final Font cellFont = FontFactory.getFont(FontFactory.HELVETICA, 9);
 			for (final Paciente paciente : pacientes) {
-				table.addCell(new Phrase(nullToEmpty(paciente.getNome()), cellFont));
-				table.addCell(new Phrase(nullToEmpty(paciente.getCpf()), cellFont));
-				table.addCell(new Phrase(nullToEmpty(paciente.getTelefone()), cellFont));
-				table.addCell(new Phrase(
-						paciente.getDataNascimento() != null ? paciente.getDataNascimento().format(DATA_BR) : "",
-						cellFont));
-				table.addCell(new Phrase(nullToEmpty(paciente.getEmail()), cellFont));
+				PdfReportUtil.celula(table, paciente.getNome());
+				PdfReportUtil.celula(table, paciente.getCpf());
+				PdfReportUtil.celula(table, paciente.getTelefone());
+				PdfReportUtil.celula(table,
+						paciente.getDataNascimento() != null ? paciente.getDataNascimento().format(DATA_BR) : "");
+				PdfReportUtil.celula(table, paciente.getEmail());
 			}
 
 			document.add(table);
@@ -110,10 +92,6 @@ public class PacienteService {
 		return PacienteDTO.builder().id(paciente.getId()).nome(paciente.getNome()).cpf(paciente.getCpf())
 				.telefone(paciente.getTelefone()).email(paciente.getEmail())
 				.dataNascimento(paciente.getDataNascimento()).endereco(paciente.getEndereco()).build();
-	}
-
-	private String nullToEmpty(final String value) {
-		return value != null ? value : "";
 	}
 
 }

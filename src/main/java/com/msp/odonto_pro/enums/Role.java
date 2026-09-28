@@ -30,7 +30,9 @@ public enum Role {
 			Permission.READ_DENTISTA, Permission.WRITE_DENTISTA, Permission.DELETE_DENTISTA, // Tratamentos
 			Permission.READ_TRATAMENTO, Permission.WRITE_TRATAMENTO, Permission.DELETE_TRATAMENTO, // Consultas
 			Permission.READ_CONSULTA, Permission.WRITE_CONSULTA, Permission.DELETE_CONSULTA, // Usuários
-			Permission.READ_USUARIO, Permission.WRITE_USUARIO, Permission.DELETE_USUARIO)))),
+			Permission.READ_USUARIO, Permission.WRITE_USUARIO, Permission.DELETE_USUARIO, // Estoque
+			Permission.READ_ESTOQUE, Permission.WRITE_ESTOQUE, Permission.DELETE_ESTOQUE, // Financeiro
+			Permission.READ_FINANCEIRO, Permission.WRITE_FINANCEIRO)))),
 
 	/**
 	 * Dentista: profissional de saúde. Pode ver e gerenciar pacientes e
@@ -40,7 +42,8 @@ public enum Role {
 			Permission.READ_PACIENTE, Permission.WRITE_PACIENTE, // Dentistas (pode ver os outros dentistas)
 			Permission.READ_DENTISTA, // Tratamentos
 			Permission.READ_TRATAMENTO, Permission.WRITE_TRATAMENTO, // Consultas
-			Permission.READ_CONSULTA, Permission.WRITE_CONSULTA)))),
+			Permission.READ_CONSULTA, Permission.WRITE_CONSULTA, // Estoque (consulta e dá baixa em materiais usados)
+			Permission.READ_ESTOQUE, Permission.WRITE_ESTOQUE)))),
 
 	/**
 	 * Recepcionista: atendimento inicial. Pode cadastrar pacientes e agendar
@@ -50,7 +53,17 @@ public enum Role {
 			Permission.READ_PACIENTE, Permission.WRITE_PACIENTE, // Dentistas (apenas leitura para agendamento)
 			Permission.READ_DENTISTA, // Tratamentos (apenas leitura)
 			Permission.READ_TRATAMENTO, // Consultas
-			Permission.READ_CONSULTA, Permission.WRITE_CONSULTA))));
+			Permission.READ_CONSULTA, Permission.WRITE_CONSULTA, // Estoque
+			Permission.READ_ESTOQUE, Permission.WRITE_ESTOQUE, // Financeiro (recebimentos e despesas)
+			Permission.READ_FINANCEIRO, Permission.WRITE_FINANCEIRO)))),
+
+	/**
+	 * Super administrador: gerencia as clínicas cadastradas na plataforma
+	 * (multi-tenant). Não possui nenhuma permissão sobre dados clínicos/
+	 * operacionais de uma clínica específica — apenas os endpoints de
+	 * /clinicas, controlados via hasRole("SUPER_ADMIN").
+	 */
+	SUPER_ADMIN(Collections.emptySet());
 
 	/**
 	 * Conjunto imutável de permissões associadas a este Role. Usamos

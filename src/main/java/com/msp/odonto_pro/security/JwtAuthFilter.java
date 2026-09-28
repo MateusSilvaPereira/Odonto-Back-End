@@ -54,9 +54,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 			return true;
 		}
 
-		// URLs públicas
+		// URLs públicas (exceto /auth/alterar-senha, que exige autenticação —
+		// ver SecurityConfig)
+		if ("/auth/alterar-senha".equals(path)) {
+			return false;
+		}
 		return path.startsWith("/auth") || path.startsWith("/uploads") || path.startsWith("/swagger-ui")
-				|| path.startsWith("/v3/api-docs");
+				|| path.startsWith("/v3/api-docs") || path.startsWith("/public");
 	}
 
 	/**

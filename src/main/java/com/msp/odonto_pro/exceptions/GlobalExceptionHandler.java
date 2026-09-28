@@ -3,14 +3,19 @@ package com.msp.odonto_pro.exceptions;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Handler global de exceções.
@@ -26,6 +31,26 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(NotFoundException.class)
 	public ResponseEntity<Map<String, String>> handleNotFound(final NotFoundException ex) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body(ex.getMessage()));
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<Map<String, String>> handleNoResourceFound(final NoResourceFoundException ex) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body("Recurso não encontrado"));
+	}
+
+	@ExceptionHandler(ConflitoException.class)
+	public ResponseEntity<Map<String, String>> handleConflito(final ConflitoException ex) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(body(ex.getMessage()));
+	}
+
+	@ExceptionHandler(LinkExpiradoException.class)
+	public ResponseEntity<Map<String, String>> handleLinkExpirado(final LinkExpiradoException ex) {
+		return ResponseEntity.status(HttpStatus.GONE).body(body(ex.getMessage()));
+	}
+
+	@ExceptionHandler(TooManyRequestsException.class)
+	public ResponseEntity<Map<String, String>> handleTooManyRequests(final TooManyRequestsException ex) {
+		return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body(ex.getMessage()));
 	}
 
 	@ExceptionHandler(AccessDeniedException.class)
@@ -49,6 +74,28 @@ public class GlobalExceptionHandler {
 		final String message = ex.getBindingResult().getFieldErrors().stream().findFirst()
 				.map(error -> error.getField() + ": " + error.getDefaultMessage()).orElse("Dados inválidos");
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body(message));
+	}
+
+	@ExceptionHandler(MissingServletRequestPartException.class)
+	public ResponseEntity<Map<String, String>> handleMissingPart(final MissingServletRequestPartException ex) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body(ex.getRequestPartName() + " é obrigatório"));
+	}
+
+	@ExceptionHandler(MissingServletRequestParameterException.class)
+	public ResponseEntity<Map<String, String>> handleMissingParameter(final MissingServletRequestParameterException ex) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body(ex.getParameterName() + " é obrigatório"));
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+	public ResponseEntity<Map<String, String>> handleMediaTypeNotSupported(final HttpMediaTypeNotSupportedException ex) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(body("Tipo de requisição não suportado. Envie JSON ou multipart/form-data."));
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(final DataIntegrityViolationException ex) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(body(
+				"Não é possível concluir esta operação porque o registro possui dados vinculados (ex: consultas, prontuário, tratamentos, pagamentos). Remova-os antes de tentar novamente."));
 	}
 
 	@ExceptionHandler(RuntimeException.class)

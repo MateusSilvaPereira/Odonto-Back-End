@@ -17,22 +17,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 import com.msp.odonto_pro.exceptions.AccessDeniedHandlerImpl;
 import com.msp.odonto_pro.exceptions.AuthenticationEntryPointImpl;
+import com.msp.odonto_pro.web.ApiPaths;
 
-/**
- * Configuração principal de segurança da aplicação.
- * 
- * Responsabilidades: 1. Definir quais URLs são públicas e quais requerem
- * autenticação 2. Configurar regras de acesso por Role (URL-based security) 3.
- * Habilitar @PreAuthorize para segurança granular (method-based security) 4.
- * Configurar CORS, CSRF, sessões 5. Registrar o JwtAuthFilter na cadeia de
- * filtros
- * 
- * IMPORTANTE: @EnableMethodSecurity habilita o uso de @PreAuthorize nos
- * controllers.
- */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // 🔑 HABILITA @PreAuthorize NOS CONTROLLERS
+@EnableMethodSecurity // habilita @PreAuthorize nos controllers, além das regras de URL abaixo
 public class SecurityConfig {
 
 	private final JwtAuthFilter jwtAuthFilter;
@@ -47,44 +36,16 @@ public class SecurityConfig {
 		this.authenticationEntryPoint = new AuthenticationEntryPointImpl();
 	}
 
-	/**
-	 * Encoder de senhas usando BCrypt.
-	 * 
-	 * BCrypt é o padrão ouro para hashing de senhas porque: - Adiciona salt
-	 * automaticamente - É lento por design (resistente a ataques de força bruta) -
-	 * O custo pode ser ajustado conforme o hardware evolui
-	 * 
-	 * @return encoder de senhas
-	 */
 	@Bean
 	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
-	/**
-	 * Gerenciador de autenticação do Spring Security.
-	 * 
-	 * @param config configuração de autenticação
-	 * @return AuthenticationManager
-	 * @throws Exception se houver erro na configuração
-	 */
 	@Bean
 	AuthenticationManager authenticationManager(final AuthenticationConfiguration config) throws Exception {
 		return config.getAuthenticationManager();
 	}
 
-	/**
-	 * Cadeia de filtros de segurança.
-	 * 
-	 * Ordem das configurações: 1. CORS (Cross-Origin Resource Sharing) 2. CSRF
-	 * (desabilitado porque usamos JWT, não cookies) 3. Headers de segurança 4.
-	 * Regras de autorização por URL 5. Política de sessão (STATELESS porque usamos
-	 * JWT) 6. Filtro JWT (antes do UsernamePasswordAuthenticationFilter)
-	 * 
-	 * @param http configuração HTTP do Spring Security
-	 * @return cadeia de filtros construída
-	 * @throws Exception se houver erro na configuração
-	 */
 	@Bean
 	SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
 		http
@@ -101,45 +62,86 @@ public class SecurityConfig {
 
 				// ===== AUTORIZAÇÃO POR URL =====
 				.authorizeHttpRequests(auth -> auth
-						// --- URLs PÚBLICAS ---
-						.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs",
-								"/v3/api-docs/swagger-config", "/swagger-resources/**", "/webjars/**", "/auth/**",
-								"/uploads/**")
-						.permitAll()
+						// --- Exceção dentro de /auth/** (avaliada antes do permitAll abaixo,
+						// já que a 1ª regra que casar vence) ---
+						.requestMatchers(ApiPaths.V1 + "/auth/alterar-senha").authenticated()
 
-						// --- USUÁRIOS (só ADMIN) ---
-						.requestMatchers("/usuario/**").hasRole("ADMIN")
+						// --- URLs PÚBLICAS. Uploads e Swagger ficam fora do versionamento
+						// de propósito (não são endpoints de API de negócio). ---
+						.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs",
+								"/v3/api-docs/swagger-config", "/swagger-resources/**", "/webjars/**", "/uploads/**")
+						.permitAll()
+						.requestMatchers(ApiPaths.V1 + "/auth/**", ApiPaths.V1 + "/public/**").permitAll()
+
+						// --- USUÁRIOS (ADMIN; exceção: redefinição de senha também SUPER_ADMIN) ---
+						.requestMatchers(ApiPaths.V1 + "/usuarios/*/enviar-redefinicao-senha")
+						.hasAnyRole("ADMIN", "SUPER_ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/usuarios/**").hasRole("ADMIN")
+
+						// --- CLÍNICAS (multi-tenant): CRUD por id só SUPER_ADMIN; /me também ADMIN
+						// (checagem fina de qual endpoint é feita via @PreAuthorize no controller) ---
+						.requestMatchers(ApiPaths.V1 + "/clinicas/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+
+						// --- CONFIGURAÇÃO DA CLÍNICA (legado, só ADMIN) ---
+						.requestMatchers(ApiPaths.V1 + "/configuracao-clinica/**").hasRole("ADMIN")
 
 						// --- NOTIFICAÇÕES / CONFIG DE LEMBRETES (só ADMIN) ---
-						.requestMatchers("/notificacoes/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/notificacoes/**").hasRole("ADMIN")
 
-						// --- FINANCEIRO (só ADMIN) ---
-						.requestMatchers("/financeiro/**").hasRole("ADMIN")
-						.requestMatchers("/pagamentos/**").hasRole("ADMIN")
+						// --- RECALL (campanha de reativação; só ADMIN) ---
+						.requestMatchers(ApiPaths.V1 + "/recall/**").hasRole("ADMIN")
+
+						// --- AUDITORIA LGPD (só ADMIN) ---
+						.requestMatchers(ApiPaths.V1 + "/auditoria/**").hasRole("ADMIN")
+
+						// --- FINANCEIRO (ADMIN ou RECEPCIONISTA) ---
+						.requestMatchers(ApiPaths.V1 + "/financeiro/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
+						.requestMatchers(ApiPaths.V1 + "/pagamentos/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
+						.requestMatchers(ApiPaths.V1 + "/parcelas/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
+						.requestMatchers(ApiPaths.V1 + "/cobrancas/**").hasAnyRole("ADMIN", "RECEPCIONISTA")
 
 						// --- RELATÓRIO GERAL CONSOLIDADO (só ADMIN) ---
-						.requestMatchers("/relatorios/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/relatorios/**").hasRole("ADMIN")
+
+						// --- ESTOQUE (ADMIN, DENTISTA ou RECEPCIONISTA; exclusão só ADMIN) ---
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/estoque/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/estoque/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
 
 						// --- DENTISTAS (ADMIN ou DENTISTA) ---
-						.requestMatchers(HttpMethod.DELETE, "/dentista/**").hasRole("ADMIN")
-						.requestMatchers("/dentista/**").hasAnyRole("ADMIN", "DENTISTA")
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/dentistas/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/dentistas/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
 
-						// --- TRATAMENTOS (ADMIN ou DENTISTA) ---
-						.requestMatchers(HttpMethod.DELETE, "/tratamento/**").hasRole("ADMIN")
-						.requestMatchers("/tratamento/**").hasAnyRole("ADMIN", "DENTISTA")
+						// --- BLOQUEIOS DE AGENDA (sub-recurso de dentista) ---
+						.requestMatchers(ApiPaths.V1 + "/bloqueios-agenda/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
 
 						// --- PACIENTES (todos os roles autenticados) ---
-						.requestMatchers(HttpMethod.DELETE, "/paciente/**").hasRole("ADMIN")
-						.requestMatchers("/paciente/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/pacientes/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/pacientes/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
 
-						// --- ODONTOGRAMA E PLANO DE TRATAMENTO (sub-recursos de paciente) ---
-						.requestMatchers("/pacientes/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
-						.requestMatchers(HttpMethod.DELETE, "/tratamentos/**").hasRole("ADMIN")
-						.requestMatchers("/tratamentos/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
+						// --- CONVÊNIOS (sub-cadastro de paciente) ---
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/convenios/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/convenios/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
+
+						// --- PLANO DE TRATAMENTO (sub-recurso de paciente) ---
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/tratamentos/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/tratamentos/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/orcamentos/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/orcamentos/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
 
 						// --- CONSULTAS (ADMIN, DENTISTA ou RECEPCIONISTA) ---
-						.requestMatchers(HttpMethod.DELETE, "/consultas/**").hasRole("ADMIN")
-						.requestMatchers("/consultas/**").hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/consultas/**").hasRole("ADMIN")
+						.requestMatchers(ApiPaths.V1 + "/consultas/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
+
+						// --- LISTA DE ESPERA (parte operacional da agenda) ---
+						.requestMatchers(ApiPaths.V1 + "/lista-espera/**").hasAnyRole("ADMIN", "DENTISTA",
+								"RECEPCIONISTA")
 
 						// --- QUALQUER OUTRA URL REQUER AUTENTICAÇÃO ---
 						.anyRequest().authenticated())

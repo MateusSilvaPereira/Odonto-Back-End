@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import com.msp.odonto_pro.entity.Usuario;
+import com.msp.odonto_pro.entity.usuario.Usuario;
 import com.msp.odonto_pro.enums.Role;
 
 import io.jsonwebtoken.Claims;
@@ -64,7 +64,9 @@ public class JwtService {
 				// Adiciona o nome do usuário (útil para o frontend)
 				.claim("nome", usuario.getNome())
 				// Adiciona o ID do usuário
-				.claim("id", usuario.getId()).setIssuedAt(now).setExpiration(expiration)
+				.claim("id", usuario.getId())
+				// Adiciona a clínica (tenant) do usuário; nulo para SUPER_ADMIN
+				.claim("clinicaId", usuario.getClinicaId()).setIssuedAt(now).setExpiration(expiration)
 				.signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
 	}
 
@@ -87,6 +89,16 @@ public class JwtService {
 	public Role extractRole(final String token) {
 		final String roleName = extractClaim(token, claims -> claims.get("role", String.class));
 		return Role.valueOf(roleName);
+	}
+
+	/**
+	 * Extrai o id da clínica (tenant) do token. Nulo para SUPER_ADMIN.
+	 *
+	 * @param token token JWT
+	 * @return id da clínica, ou null
+	 */
+	public Long extractClinicaId(final String token) {
+		return extractClaim(token, claims -> claims.get("clinicaId", Long.class));
 	}
 
 	/**

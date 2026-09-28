@@ -21,4 +21,9 @@ public interface DentistaRepository extends JpaRepository<Dentista, Long> {
 
 	boolean existsByCroAndIdNotAndClinicaId(String cro, Long id, Long clinicaId);
 
+	/** CRO é único GLOBALMENTE no banco (não só por clínica) — ver constraint em Dentista.cro. */
+	boolean existsByCro(String cro);
+
+	boolean existsByCroAndIdNot(String cro, Long id);
+
 }

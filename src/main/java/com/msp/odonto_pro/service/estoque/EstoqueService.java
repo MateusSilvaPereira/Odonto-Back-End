@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import com.msp.odonto_pro.dto.estoque.MovimentacaoEstoqueDTO;
 import com.msp.odonto_pro.entity.estoque.ItemEstoque;
 import com.msp.odonto_pro.entity.estoque.MovimentacaoEstoque;
 import com.msp.odonto_pro.entity.usuario.Usuario;
+import com.msp.odonto_pro.exceptions.ConflitoException;
 import com.msp.odonto_pro.exceptions.NotFoundException;
 import com.msp.odonto_pro.repository.estoque.ItemEstoqueRepository;
 import com.msp.odonto_pro.repository.estoque.MovimentacaoEstoqueRepository;
@@ -97,7 +99,14 @@ public class EstoqueService {
 				? item.getQuantidadeAtual() + dto.getQuantidade()
 				: item.getQuantidadeAtual() - dto.getQuantidade();
 		item.setQuantidadeAtual(novaQuantidade);
-		this.itemEstoqueRepository.save(item);
+		try {
+			this.itemEstoqueRepository.save(item);
+		} catch (final ObjectOptimisticLockingFailureException e) {
+			// Outra movimentação para este mesmo item foi registrada entre a
+			// leitura de quantidadeAtual acima e este save.
+			throw new ConflitoException(
+					"Este item foi atualizado por outra operação, recarregue e tente novamente.");
+		}
 
 		final MovimentacaoEstoque movimentacao = MovimentacaoEstoque.builder().itemEstoque(item).tipo(dto.getTipo())
 				.quantidade(dto.getQuantidade()).motivo(dto.getMotivo())

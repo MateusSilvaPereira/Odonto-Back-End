@@ -1,5 +1,9 @@
 package com.msp.odonto_pro.config;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -169,8 +173,9 @@ public class DataMigrationRunner implements CommandLineRunner {
 			return;
 		}
 
-		final String senha = this.superAdminPasswordConfigurada != null ? this.superAdminPasswordConfigurada
-				: UUID.randomUUID().toString().substring(0, 12);
+		final boolean senhaGerada = this.superAdminPasswordConfigurada == null;
+		final String senha = senhaGerada ? UUID.randomUUID().toString().substring(0, 12)
+				: this.superAdminPasswordConfigurada;
 
 		final Usuario superAdmin = new Usuario();
 		superAdmin.setNome("Super Administrador");
@@ -181,7 +186,32 @@ public class DataMigrationRunner implements CommandLineRunner {
 		superAdmin.setAtivo(true);
 		this.usuarioRepository.save(superAdmin);
 
-		log.warn("=== SUPER_ADMIN inicial criado: username='{}' senha='{}' — troque a senha apos o primeiro "
-				+ "login (nao ha endpoint de troca ainda; ver AuthController) ===", this.superAdminUsername, senha);
+		// A senha gerada nunca vai para o log (log de aplicacao costuma ser agregado/
+		// retido bem alem do necessario) — escrevemos uma unica vez num arquivo local
+		// git-ignorado, que o operador deve apagar apos o primeiro login.
+		if (senhaGerada) {
+			this.escreverCredencialInicial(this.superAdminUsername, senha);
+			log.warn("=== SUPER_ADMIN inicial criado: username='{}' — senha gerada automaticamente, veja "
+					+ "super-admin-credentials.txt na raiz do projeto (apague o arquivo apos o primeiro login; "
+					+ "para trocar a senha use POST /api/v1/auth/alterar-senha) ===", this.superAdminUsername);
+		} else {
+			log.warn("=== SUPER_ADMIN inicial criado: username='{}' (senha definida via app.super-admin.password) ===",
+					this.superAdminUsername);
+		}
+	}
+
+	/** Escreve a senha gerada uma única vez; não sobrescreve se o arquivo já existir de uma execução anterior. */
+	private void escreverCredencialInicial(final String username, final String senha) {
+		final Path arquivo = Paths.get("super-admin-credentials.txt");
+		if (Files.exists(arquivo)) {
+			return;
+		}
+		try {
+			Files.writeString(arquivo, "username=" + username + "\nsenha=" + senha + "\n"
+					+ "Apague este arquivo depois do primeiro login. Para trocar a senha, use POST /api/v1/auth/alterar-senha.\n");
+		} catch (final IOException e) {
+			log.error("Nao foi possivel escrever super-admin-credentials.txt; a senha gerada foi perdida — "
+					+ "delete o usuario '{}' do banco e reinicie a aplicacao para gerar outra.", username, e);
+		}
 	}
 }

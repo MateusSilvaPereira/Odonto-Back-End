@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -136,7 +137,16 @@ public class AgendamentoPublicoService {
 		consulta.setTokenConfirmacao(UUID.randomUUID().toString());
 		consulta.setTokenExpiraEm(LocalDateTime.of(request.getData(), request.getHorario()).plusHours(2));
 
-		final Consulta salva = this.consultaRepository.save(consulta);
+		final Consulta salva;
+		try {
+			salva = this.consultaRepository.save(consulta);
+		} catch (final DataIntegrityViolationException e) {
+			// Última linha de defesa contra duas requisições concorrentes
+			// para o mesmo dentista/data/hora — a checagem de disponibilidade
+			// acima roda antes do insert e não impede a corrida sozinha; o
+			// índice único parcial em SchemaPatchRunner é quem garante isso.
+			throw new ConflitoException("Este horário acabou de ser preenchido, escolha outro horário.");
+		}
 
 		return PublicAgendamentoResponseDTO.builder().consultaId(salva.getId()).data(salva.getData())
 				.horario(salva.getHorario()).procedimento(salva.getProcedimento()).dentista(dentista.getNome())

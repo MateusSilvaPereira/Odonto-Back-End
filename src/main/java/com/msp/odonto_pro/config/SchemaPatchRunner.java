@@ -32,6 +32,22 @@ public class SchemaPatchRunner implements ApplicationRunner {
 		this.executarSeguro("ALTER TABLE dentistas ALTER COLUMN cpf DROP NOT NULL");
 
 		this.corrigirColunaConteudoTermoConsentimento();
+
+		// Sem essa constraint, duas requisições simultâneas de agendamento
+		// público (POST /public/clinicas/{id}/agendamentos) podem ambas
+		// passar pela checagem de disponibilidade em memória e criar duas
+		// consultas para o mesmo dentista/data/hora. Índice parcial: ignora
+		// linhas sem dentista vinculado (consulta "geral") e consultas
+		// canceladas, que liberam o horário para reagendar.
+		this.executarSeguro(
+				"CREATE UNIQUE INDEX IF NOT EXISTS ux_consultas_dentista_data_hora ON consultas (dentista_id, data, hora) WHERE dentista_id IS NOT NULL AND status <> 'cancelado'");
+
+		// Colunas de controle de concorrência otimista (@Version) para as
+		// entidades que sofrem lost-update quando duas operações concorrentes
+		// leem-e-escrevem o mesmo total (pagamento de tratamento, baixa de
+		// estoque). DEFAULT 0 preenche as linhas já existentes.
+		this.executarSeguro("ALTER TABLE itens_tratamento ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0");
+		this.executarSeguro("ALTER TABLE itens_estoque ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0");
 	}
 
 	/**

@@ -31,8 +31,10 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Gestão de clínicas (multi-tenant). CRUD por id: só SUPER_ADMIN. "Minha
- * clínica" (/me): ADMIN/SUPER_ADMIN, sempre derivada do token — substitui o
- * antigo singleton /configuracao-clinica.
+ * clínica" (/me): só ADMIN — SUPER_ADMIN não está vinculado a nenhuma
+ * clínica (ver SecurityUtils.clinicaIdAtual()), então o conceito de "minha
+ * clínica" não se aplica a esse papel. Substitui o antigo singleton
+ * /configuracao-clinica.
  */
 @RestController
 @RequestMapping(ApiPaths.V1 + "/clinicas")
@@ -79,14 +81,14 @@ public class ClinicaController {
 		return ResponseEntity.noContent().build();
 	}
 
-	@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Obter os dados da própria clínica (derivada do token)")
 	@GetMapping("/me")
 	public ResponseEntity<ClinicaDTO> obterMinha() {
 		return ResponseEntity.ok(this.clinicaService.obterMinha());
 	}
 
-	@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Atualizar a própria clínica (sem trocar o logo)")
 	@PutMapping(value = "/me", consumes = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ClinicaDTO> atualizarMinhaJson(@Valid @RequestBody final ClinicaUpdateRequest request)
@@ -95,7 +97,7 @@ public class ClinicaController {
 				request.getTelefone(), request.getEndereco(), null));
 	}
 
-	@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
 	@Operation(summary = "Atualizar a própria clínica com logo novo")
 	@PutMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<ClinicaDTO> atualizarMinhaMultipart(@RequestParam("nome") final String nome,

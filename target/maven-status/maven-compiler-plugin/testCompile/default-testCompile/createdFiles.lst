@@ -1,5 +1,0 @@
-com\msp\odonto_pro\repository\paciente\PacienteRepositoryTest.class
-com\msp\odonto_pro\OdontoProApplicationTests.class
-com\msp\odonto_pro\controller\consulta\ConsultaControllerTest.class
-com\msp\odonto_pro\controller\paciente\PacienteControllerTest.class
-com\msp\odonto_pro\controller\usuario\AuthControllerTest.class

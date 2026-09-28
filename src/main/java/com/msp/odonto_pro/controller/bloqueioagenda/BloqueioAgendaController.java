@@ -35,14 +35,14 @@ public class BloqueioAgendaController {
 		return ResponseEntity.ok(this.bloqueioAgendaService.listar());
 	}
 
-	@PreAuthorize("hasAuthority('write:dentista')")
+	@PreAuthorize("hasAuthority('write:consulta')")
 	@Operation(summary = "Criar bloqueio de agenda.")
 	@PostMapping
 	public ResponseEntity<BloqueioAgendaDTO> criar(@RequestBody final BloqueioAgendaDTO dto) {
 		return ResponseEntity.status(HttpStatus.CREATED).body(this.bloqueioAgendaService.criar(dto));
 	}
 
-	@PreAuthorize("hasAuthority('write:dentista')")
+	@PreAuthorize("hasAuthority('write:consulta')")
 	@Operation(summary = "Excluir bloqueio de agenda por id.")
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> excluir(@PathVariable final Long id) {

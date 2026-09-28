@@ -73,9 +73,11 @@ public class SecurityConfig {
 						.permitAll()
 						.requestMatchers(ApiPaths.V1 + "/auth/**", ApiPaths.V1 + "/public/**").permitAll()
 
-						// --- USUÁRIOS (ADMIN; exceção: redefinição de senha também SUPER_ADMIN) ---
+						// --- USUÁRIOS (ADMIN; exceções: redefinição de senha também SUPER_ADMIN,
+						// e /me é o próprio usuário autenticado editando o próprio perfil) ---
 						.requestMatchers(ApiPaths.V1 + "/usuarios/*/enviar-redefinicao-senha")
 						.hasAnyRole("ADMIN", "SUPER_ADMIN")
+						.requestMatchers(HttpMethod.PUT, ApiPaths.V1 + "/usuarios/me").authenticated()
 						.requestMatchers(ApiPaths.V1 + "/usuarios/**").hasRole("ADMIN")
 
 						// --- CLÍNICAS (multi-tenant): CRUD por id só SUPER_ADMIN; /me também ADMIN
@@ -117,6 +119,11 @@ public class SecurityConfig {
 								"RECEPCIONISTA")
 
 						// --- PACIENTES (todos os roles autenticados) ---
+						// Exceção: excluir anexo clínico é permitido a quem pode escrever no
+						// prontuário (ADMIN/DENTISTA/RECEPCIONISTA), não só ADMIN — avaliada
+						// antes da regra genérica de DELETE de paciente, que é mais restritiva.
+						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/pacientes/*/anexos/**")
+						.hasAnyRole("ADMIN", "DENTISTA", "RECEPCIONISTA")
 						.requestMatchers(HttpMethod.DELETE, ApiPaths.V1 + "/pacientes/**").hasRole("ADMIN")
 						.requestMatchers(ApiPaths.V1 + "/pacientes/**").hasAnyRole("ADMIN", "DENTISTA",
 								"RECEPCIONISTA")

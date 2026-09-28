@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -99,6 +100,15 @@ public class ItemTratamento {
 	 * service.
 	 */
 	private Long consultaId;
+
+	/**
+	 * Controle de concorrência otimista: sem isso, dois pagamentos
+	 * registrados ao mesmo tempo (ver FinanceiroService.registrarPagamento)
+	 * podem ler o mesmo valorPago, ambos passarem na validação de saldo e um
+	 * sobrescrever o outro.
+	 */
+	@Version
+	private Long version;
 
 	@PrePersist
 	public void prePersist() {

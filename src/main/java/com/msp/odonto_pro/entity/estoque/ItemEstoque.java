@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -58,6 +59,14 @@ public class ItemEstoque {
 
 	@Column(nullable = false)
 	private LocalDateTime atualizadoEm;
+
+	/**
+	 * Controle de concorrência otimista: sem isso, duas baixas/entradas
+	 * simultâneas (ver EstoqueService.registrarMovimentacao) podem ler a
+	 * mesma quantidadeAtual e uma sobrescrever a outra.
+	 */
+	@Version
+	private Long version;
 
 	@PrePersist
 	@PreUpdate

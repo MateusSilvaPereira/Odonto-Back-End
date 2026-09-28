@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.msp.odonto_pro.dto.cobranca.CobrancaCreateRequest;
 import com.msp.odonto_pro.dto.cobranca.CobrancaOnlineDTO;
@@ -68,6 +69,14 @@ public class CobrancaOnlineService {
 		return this.toDto(this.exigir(id));
 	}
 
+	/**
+	 * Continua sendo simulação (mock, sem gateway real) — mas a cobrança só é
+	 * marcada como paga DEPOIS que o pagamento é registrado no financeiro, e
+	 * ambas as escritas ficam na mesma transação. Antes, a ordem era invertida:
+	 * se registrarPagamento() falhasse (ex: conflito de saldo), a cobrança já
+	 * tinha sido salva como "pago" sem nenhum lançamento financeiro correspondente.
+	 */
+	@Transactional
 	public CobrancaOnlineDTO simularPagamento(final Long id) {
 		final CobrancaOnline cobranca = this.exigir(id);
 
@@ -75,14 +84,14 @@ public class CobrancaOnlineService {
 			throw new ConflitoException("Esta cobrança já está paga");
 		}
 
-		cobranca.setStatus(STATUS_PAGO);
-		cobranca.setPagoEm(LocalDateTime.now());
-		this.cobrancaOnlineRepository.save(cobranca);
-
 		final PagamentoDTO pagamentoDto = PagamentoDTO.builder().itemTratamentoId(cobranca.getItemTratamentoId())
 				.valor(cobranca.getValor()).formaPagamento(cobranca.getForma()).data(LocalDate.now())
 				.observacao("Pagamento via cobrança online #" + cobranca.getId() + " (mock)").build();
 		this.financeiroService.registrarPagamento(pagamentoDto);
+
+		cobranca.setStatus(STATUS_PAGO);
+		cobranca.setPagoEm(LocalDateTime.now());
+		this.cobrancaOnlineRepository.save(cobranca);
 
 		return this.toDto(cobranca);
 	}

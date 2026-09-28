@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import com.msp.odonto_pro.dto.financeiro.PendenciaTratamentoDTO;
 import com.msp.odonto_pro.entity.financeiro.Despesa;
 import com.msp.odonto_pro.entity.itemtratamento.ItemTratamento;
 import com.msp.odonto_pro.entity.financeiro.Pagamento;
+import com.msp.odonto_pro.exceptions.ConflitoException;
 import com.msp.odonto_pro.exceptions.NotFoundException;
 import com.msp.odonto_pro.repository.financeiro.DespesaRepository;
 import com.msp.odonto_pro.repository.itemtratamento.ItemTratamentoRepository;
@@ -123,7 +125,15 @@ public class FinanceiroService {
 		final Pagamento salvo = this.pagamentoRepository.save(pagamento);
 
 		item.setValorPago(jaPago + dto.getValor());
-		this.itemTratamentoRepository.save(item);
+		try {
+			this.itemTratamentoRepository.save(item);
+		} catch (final ObjectOptimisticLockingFailureException e) {
+			// Outro pagamento para este mesmo item foi registrado entre a
+			// leitura de valorPago acima e este save — não dá pra saber se
+			// o saldo ainda comporta este pagamento sem reler o item.
+			throw new ConflitoException(
+					"Este item foi atualizado por outra operação, recarregue e tente novamente.");
+		}
 
 		return this.toDto(salvo);
 	}

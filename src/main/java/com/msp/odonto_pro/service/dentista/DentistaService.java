@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,7 +48,7 @@ public class DentistaService {
 				.ativo(dto.getAtivo() == null || dto.getAtivo()).horarioAtendimento(this.paraEntidade(dto.getHorarioAtendimento()))
 				.percentualComissao(dto.getPercentualComissao() != null ? dto.getPercentualComissao() : 0.0).build();
 
-		return this.toDto(this.dentistaRepository.save(dentista));
+		return this.toDto(this.salvar(dentista));
 	}
 
 	public DentistaDTO atualizar(final Long id, final DentistaDTO dto) {
@@ -67,7 +68,20 @@ public class DentistaService {
 		dentista.setHorarioAtendimento(this.paraEntidade(dto.getHorarioAtendimento()));
 		dentista.setPercentualComissao(dto.getPercentualComissao() != null ? dto.getPercentualComissao() : 0.0);
 
-		return this.toDto(this.dentistaRepository.save(dentista));
+		return this.toDto(this.salvar(dentista));
+	}
+
+	/**
+	 * Rede de segurança contra corrida entre a checagem de CRO duplicado (item
+	 * anterior) e o INSERT/UPDATE em si: se ainda assim a constraint única do
+	 * banco for violada, devolve 409 em vez de deixar estourar um 500 cru.
+	 */
+	private Dentista salvar(final Dentista dentista) {
+		try {
+			return this.dentistaRepository.save(dentista);
+		} catch (final DataIntegrityViolationException e) {
+			throw new ConflitoException("Já existe um dentista cadastrado com este CRO");
+		}
 	}
 
 	public DentistaDTO atualizarFoto(final Long id, final MultipartFile foto) throws IOException {
@@ -120,12 +134,13 @@ public class DentistaService {
 			throw new IllegalArgumentException("corAgenda deve ser um hexadecimal válido, ex: #4f6bed");
 		}
 
-		final Long clinicaId = SecurityUtils.clinicaIdAtual();
-		final boolean croEmUso = idAtual == null
-				? this.dentistaRepository.existsByCroAndClinicaId(dto.getCro().trim(), clinicaId)
-				: this.dentistaRepository.existsByCroAndIdNotAndClinicaId(dto.getCro().trim(), idAtual, clinicaId);
+		// CRO é único GLOBALMENTE no banco (constraint em Dentista.cro), não só dentro
+		// da clínica atual — a checagem precisa bater com o escopo real da constraint,
+		// senão um CRO já usado em outra clínica passa aqui e quebra no INSERT.
+		final boolean croEmUso = idAtual == null ? this.dentistaRepository.existsByCro(dto.getCro().trim())
+				: this.dentistaRepository.existsByCroAndIdNot(dto.getCro().trim(), idAtual);
 		if (croEmUso) {
-			throw new IllegalArgumentException("Já existe um dentista cadastrado com este CRO");
+			throw new ConflitoException("Já existe um dentista cadastrado com este CRO");
 		}
 
 		if (dto.getPercentualComissao() != null && (dto.getPercentualComissao() < 0 || dto.getPercentualComissao() > 100)) {

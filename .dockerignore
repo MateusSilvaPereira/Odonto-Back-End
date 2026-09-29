@@ -1,0 +1,10 @@
+target/
+.git/
+.settings/
+.classpath
+.project
+.factorypath
+uploads/
+super-admin-credentials.txt
+application-secrets.properties
+*.md

@@ -66,10 +66,11 @@ public class SecurityConfig {
 						// já que a 1ª regra que casar vence) ---
 						.requestMatchers(ApiPaths.V1 + "/auth/alterar-senha").authenticated()
 
-						// --- URLs PÚBLICAS. Uploads e Swagger ficam fora do versionamento
-						// de propósito (não são endpoints de API de negócio). ---
+						// --- URLs PÚBLICAS. Uploads, Swagger e o health check ficam fora do
+						// versionamento de propósito (não são endpoints de API de negócio) ---
 						.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/v3/api-docs",
-								"/v3/api-docs/swagger-config", "/swagger-resources/**", "/webjars/**", "/uploads/**")
+								"/v3/api-docs/swagger-config", "/swagger-resources/**", "/webjars/**", "/uploads/**",
+								"/actuator/health")
 						.permitAll()
 						.requestMatchers(ApiPaths.V1 + "/auth/**", ApiPaths.V1 + "/public/**").permitAll()
 

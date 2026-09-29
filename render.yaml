@@ -1,0 +1,56 @@
+# Blueprint do Render (render.com/docs/blueprint-spec) - permite subir o
+# servico direto do dashboard com "New > Blueprint", sem preencher os campos
+# de build/start manualmente. As variaveis marcadas com sync: false ficam em
+# branco no primeiro deploy - preencher no dashboard antes ou logo depois.
+services:
+  - type: web
+    name: odonto-pro-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      # Banco (Neon) - mesmo banco usado em dev, so credenciais mudam.
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+
+      # Gerado automaticamente pelo Render no primeiro deploy - nao precisa
+      # preencher.
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Defina como a senha que voce quer usar para o primeiro login como
+      # SUPER_ADMIN. Sem isso, uma senha aleatoria e gerada e gravada num
+      # arquivo dentro do container (dificil de recuperar no Render).
+      - key: APP_SUPER_ADMIN_PASSWORD
+        sync: false
+
+      # URL do frontend depois de publicado na Vercel (ex.:
+      # https://odonto-pro.vercel.app) - sem "/" no final. Usada no CORS e
+      # nos links enviados por e-mail/WhatsApp.
+      - key: APP_CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: APP_FRONTEND_URL
+        sync: false
+
+      # Opcionais - sem eles, e-mail e WhatsApp ficam so desativados (loga
+      # aviso), sem quebrar a aplicacao.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: APP_MAIL_FROM
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
